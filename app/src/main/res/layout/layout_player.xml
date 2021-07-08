@@ -29,7 +29,7 @@
         <androidx.appcompat.widget.AppCompatImageButton
             android:layout_width="@dimen/player_play_pause_button_size"
             android:layout_height="@dimen/player_play_pause_button_size"
-            android:background="@drawable/round_button"
+            android:background="@drawable/shape_play_pause_button"
             android:backgroundTint="@color/primary_dark"
             android:src="@drawable/ic_pause_white" />
 
