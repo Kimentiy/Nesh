@@ -1,27 +1,16 @@
 package com.nesh
 
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-class SongsAdapter(private val songs: List<Song>) : RecyclerView.Adapter<SongViewHolder>() {
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): SongViewHolder {
-        val view = LayoutInflater.from(parent.context).inflate(R.layout.item_song, parent, false)
-
-        return SongViewHolder(view)
-    }
-
-    override fun onBindViewHolder(holder: SongViewHolder, position: Int) {
-        holder.bind(songs[position])
-    }
-
-    override fun getItemCount(): Int {
-        return songs.size
-    }
+fun createSongItemGroup(): ItemGroup<Song, SongViewHolder> {
+    return ItemGroup(layoutResId = R.layout.item_song,
+        isMyData = { it is Song },
+        createViewHolder = ::SongViewHolder,
+        bindViewHolder = { holder, data -> holder.bind(data) }
+    )
 }
 
 class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {

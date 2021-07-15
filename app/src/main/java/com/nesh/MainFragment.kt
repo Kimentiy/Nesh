@@ -38,7 +38,13 @@ class MainFragment : Fragment() {
 
         recycler.layoutManager = layoutManager
         recycler.addItemDecoration(dividerDecoration)
-        recycler.adapter = SongsAdapter(List(40) { Song("Eminem - rap god $it") })
+
+        val heterogeneousAdapter = HeterogeneousAdapter(
+            itemGroups = listOf(createSongItemGroup()),
+            initialData = List(50) { Song(it.toString()) }
+        )
+
+        recycler.adapter = heterogeneousAdapter
 
         val searchFab = view.findViewById<FloatingActionButton>(R.id.fab_search)
 
