@@ -32,7 +32,13 @@ class SearchFragment : DialogFragment() {
 
             recycler.layoutManager = layoutManager
             recycler.addItemDecoration(dividerDecoration)
-            recycler.adapter = SongsAdapter(List(40) { Song("Eminem - rap god $it") })
+
+            val heterogeneousAdapter = HeterogeneousAdapter(
+                itemGroups = listOf(createSongItemGroup()),
+                initialData = List(50) { Song(it.toString()) }
+            )
+
+            recycler.adapter = heterogeneousAdapter
         }
     }
 }
