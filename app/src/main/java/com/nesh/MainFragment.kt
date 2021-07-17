@@ -1,5 +1,6 @@
 package com.nesh
 
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -18,12 +19,20 @@ import kotlinx.coroutines.withContext
 
 class MainFragment : Fragment() {
 
+    private lateinit var mediaPlayer: MediaPlayer
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_main, container, false)
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        mediaPlayer = MediaPlayer()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -57,7 +66,12 @@ class MainFragment : Fragment() {
             val repository = SongsRepository(activity?.application as NeshApp)
 
             GlobalScope.launch {
-                repository.getRapGodSong()
+                val file = repository.getRapGodSong()
+
+                mediaPlayer.setDataSource(file!!.absolutePath)
+                mediaPlayer.prepare()
+
+                mediaPlayer.start()
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Song was downloaded", Toast.LENGTH_SHORT).show()
@@ -67,5 +81,11 @@ class MainFragment : Fragment() {
 //                .add(SearchFragment(), "SearchFragmentTag")
 //                .commit()
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        mediaPlayer.release()
     }
 }

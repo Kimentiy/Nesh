@@ -18,6 +18,6 @@ class NeshApp : Application() {
     }
 
     companion object {
-        private const val BASE_URL = "https://dl15.freemp3downloads.online/file/"
+        private const val BASE_URL = "https://www.soundhelix.com/"
     }
 }
