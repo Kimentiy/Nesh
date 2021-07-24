@@ -27,6 +27,7 @@
             android:src="@drawable/ic_previous_white" />
 
         <androidx.appcompat.widget.AppCompatImageButton
+            android:id="@+id/button_play_pause"
             android:layout_width="@dimen/player_play_pause_button_size"
             android:layout_height="@dimen/player_play_pause_button_size"
             android:background="@drawable/shape_play_pause_button"
@@ -47,6 +48,7 @@
     </LinearLayout>
 
     <ProgressBar
+        android:id="@+id/pb_playback_position"
         style="?android:attr/progressBarStyleHorizontal"
         android:layout_width="match_parent"
         android:layout_height="16dp"

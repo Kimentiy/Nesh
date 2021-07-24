@@ -1,10 +1,12 @@
 package com.nesh
 
-import android.media.MediaPlayer
+import android.media.MediaMetadataRetriever
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageButton
+import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
@@ -19,7 +21,7 @@ import kotlinx.coroutines.withContext
 
 class MainFragment : Fragment() {
 
-    private lateinit var mediaPlayer: MediaPlayer
+    private val player = Player(GlobalScope)
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -27,12 +29,6 @@ class MainFragment : Fragment() {
         savedInstanceState: Bundle?
     ): View? {
         return inflater.inflate(R.layout.fragment_main, container, false)
-    }
-
-    override fun onCreate(savedInstanceState: Bundle?) {
-        super.onCreate(savedInstanceState)
-
-        mediaPlayer = MediaPlayer()
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
@@ -62,16 +58,45 @@ class MainFragment : Fragment() {
 
         val searchFab = view.findViewById<FloatingActionButton>(R.id.fab_search)
 
+        val button = view.findViewById<ImageButton>(R.id.button_play_pause)
+
+        player.stateLiveData.observe(viewLifecycleOwner, { currentState ->
+            when (currentState) {
+                is PlayerState.Playing -> button.setImageResource(R.drawable.ic_pause_white)
+                else -> button.setImageResource(R.drawable.ic_play_white)
+            }
+            button.setOnClickListener {
+                when (currentState) {
+                    is PlayerState.Paused -> currentState.play()
+                    is PlayerState.Playing -> currentState.pause()
+                    else -> Unit
+                }
+            }
+        })
+
+        val progress = view.findViewById<ProgressBar>(R.id.pb_playback_position)
+
+        player.positionLiveData.observe(viewLifecycleOwner, { currentPosition ->
+            progress.progress = currentPosition
+        })
+
+        player.durationLiveData.observe(viewLifecycleOwner, { newDuration ->
+            progress.max = newDuration
+        })
+
         searchFab.setOnClickListener {
             val repository = SongsRepository(activity?.application as NeshApp)
 
             GlobalScope.launch {
                 val file = repository.getRapGodSong()
 
-                mediaPlayer.setDataSource(file!!.absolutePath)
-                mediaPlayer.prepare()
+                val currentPlayerState = player.stateLiveData.requireValue
 
-                mediaPlayer.start()
+                if (file != null) {
+                    currentPlayerState.stop().setSong(file).play()
+
+
+                }
 
                 withContext(Dispatchers.Main) {
                     Toast.makeText(context, "Song was downloaded", Toast.LENGTH_SHORT).show()
@@ -86,6 +111,6 @@ class MainFragment : Fragment() {
     override fun onDestroy() {
         super.onDestroy()
 
-        mediaPlayer.release()
+        player.stateLiveData.requireValue.release()
     }
 }
