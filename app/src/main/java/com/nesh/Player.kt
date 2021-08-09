@@ -1,6 +1,8 @@
 package com.nesh
 
+import android.content.Context
 import android.media.MediaPlayer
+import android.net.Uri
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import kotlinx.coroutines.*
@@ -46,6 +48,11 @@ class Player(private val scope: CoroutineScope) {
 
     suspend fun setNewSong(file: File) = withContext(Dispatchers.IO) {
         mediaPlayer.setDataSource(file.absolutePath)
+        mediaPlayer.prepare()
+    }
+
+    suspend fun setNewSong(context: Context, uri: Uri) = withContext(Dispatchers.IO) {
+        mediaPlayer.setDataSource(context, uri)
         mediaPlayer.prepare()
     }
 

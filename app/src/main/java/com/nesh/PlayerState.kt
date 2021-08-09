@@ -1,5 +1,7 @@
 package com.nesh
 
+import android.content.Context
+import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -19,6 +21,12 @@ sealed class PlayerState(protected val player: Player) {
     class Idle(player: Player) : PlayerState(player) {
         suspend fun setSong(song: File) = withContext(Dispatchers.IO) {
             player.setNewSong(song)
+
+            Paused(player).apply(player::setNewState)
+        }
+
+        suspend fun setSong(context: Context, uri: Uri) = withContext(Dispatchers.IO) {
+            player.setNewSong(context, uri)
 
             Paused(player).apply(player::setNewState)
         }

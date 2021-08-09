@@ -1,6 +1,6 @@
 package com.nesh
 
-import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,6 +8,7 @@ import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ProgressBar
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.DividerItemDecoration
@@ -22,6 +23,11 @@ import kotlinx.coroutines.withContext
 class MainFragment : Fragment() {
 
     private val player = Player(GlobalScope)
+    private lateinit var prefsHelper: PrefsHelper
+
+    private val getWorkDirectory = registerForActivityResult(OpenDocumentTree()) {
+        prefsHelper.workDirectory = it
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -33,6 +39,8 @@ class MainFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        prefsHelper = PrefsHelper(requireContext())
 
         val recycler = view.findViewById<RecyclerView>(R.id.rv_downloaded_songs)
 
@@ -88,23 +96,28 @@ class MainFragment : Fragment() {
             val repository = SongsRepository(activity?.application as NeshApp)
 
             GlobalScope.launch {
-                val file = repository.getRapGodSong()
+                prefsHelper.workDirectory?.let { dirUri ->
+                    val uri = repository.getRapGodSong(dirUri)
 
-                val currentPlayerState = player.stateLiveData.requireValue
+                    val currentPlayerState = player.stateLiveData.requireValue
 
-                if (file != null) {
-                    currentPlayerState.stop().setSong(file).play()
+                    if (uri != null) {
+                        currentPlayerState.stop().setSong(requireContext(), uri).play()
 
+                    }
 
-                }
-
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, "Song was downloaded", Toast.LENGTH_SHORT).show()
+                    withContext(Dispatchers.Main) {
+                        Toast.makeText(context, "Song was downloaded", Toast.LENGTH_SHORT).show()
+                    }
                 }
             }
 //            childFragmentManager.beginTransaction()
 //                .add(SearchFragment(), "SearchFragmentTag")
 //                .commit()
+        }
+
+        if (prefsHelper.workDirectory == null) {
+            getWorkDirectory.launch(Uri.EMPTY)
         }
     }
 
