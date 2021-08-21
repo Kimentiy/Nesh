@@ -1,8 +1,13 @@
 package com.nesh
 
 import android.app.Application
+import kotlinx.coroutines.GlobalScope
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+
+// TODO remove from here
+// TODO resources are not cleaned
+val player = Player(GlobalScope)
 
 class NeshApp : Application() {
 

@@ -1,3 +1,8 @@
 package com.nesh
 
-data class Song(val title: String)
+import android.net.Uri
+
+data class Song(
+    val title: String,
+    val uriInStorage: Uri
+)

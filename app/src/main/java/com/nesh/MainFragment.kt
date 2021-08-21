@@ -7,22 +7,22 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ProgressBar
-import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree
-import androidx.core.content.ContextCompat
+import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
-import androidx.recyclerview.widget.DividerItemDecoration
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 class MainFragment : Fragment() {
 
-    private val player = Player(GlobalScope)
+    private val adapter =
+        HeterogeneousAdapter(itemGroups = listOf(createSongItemGroup(onPlayPauseClicked = ::onPlayPauseClicked)))
+
     private lateinit var prefsHelper: PrefsHelper
 
     private val getWorkDirectory = registerForActivityResult(OpenDocumentTree()) {
@@ -45,24 +45,10 @@ class MainFragment : Fragment() {
         val recycler = view.findViewById<RecyclerView>(R.id.rv_downloaded_songs)
 
         val layoutManager = LinearLayoutManager(context)
-        val dividerDecoration = DividerItemDecoration(context, layoutManager.orientation)
-
-        dividerDecoration.setDrawable(
-            ContextCompat.getDrawable(
-                requireContext(),
-                R.drawable.divider
-            )!!
-        )
 
         recycler.layoutManager = layoutManager
-        recycler.addItemDecoration(dividerDecoration)
-
-        val heterogeneousAdapter = HeterogeneousAdapter(
-            itemGroups = listOf(createSongItemGroup()),
-            initialData = List(50) { Song(it.toString()) }
-        )
-
-        recycler.adapter = heterogeneousAdapter
+        recycler.addItemDecoration(createDividerDecoration(requireContext(), layoutManager))
+        recycler.adapter = adapter
 
         val searchFab = view.findViewById<FloatingActionButton>(R.id.fab_search)
 
@@ -93,37 +79,52 @@ class MainFragment : Fragment() {
         })
 
         searchFab.setOnClickListener {
-            val repository = SongsRepository(activity?.application as NeshApp)
-
-            GlobalScope.launch {
-                prefsHelper.workDirectory?.let { dirUri ->
-                    val uri = repository.getRapGodSong(dirUri)
-
-                    val currentPlayerState = player.stateLiveData.requireValue
-
-                    if (uri != null) {
-                        currentPlayerState.stop().setSong(requireContext(), uri).play()
-
-                    }
-
-                    withContext(Dispatchers.Main) {
-                        Toast.makeText(context, "Song was downloaded", Toast.LENGTH_SHORT).show()
-                    }
-                }
-            }
-//            childFragmentManager.beginTransaction()
-//                .add(SearchFragment(), "SearchFragmentTag")
-//                .commit()
+            childFragmentManager.beginTransaction()
+                .add(SearchFragment(), "SearchFragmentTag")
+                .commit()
         }
 
         if (prefsHelper.workDirectory == null) {
-            getWorkDirectory.launch(Uri.EMPTY)
+            viewLifecycleOwner.lifecycleScope.launch {
+                val result = showAlertDialog(requireContext(), "Please select a working directory")
+
+                when (result) {
+                    DialogResult.Accepted -> getWorkDirectory.launch(Uri.EMPTY)
+                    DialogResult.Dismissed -> Unit
+                }
+            }
         }
     }
 
-    override fun onDestroy() {
-        super.onDestroy()
+    override fun onResume() {
+        super.onResume()
 
-        player.stateLiveData.requireValue.release()
+        if (prefsHelper.workDirectory != null) {
+            lifecycleScope.launch {
+                withContext(Dispatchers.IO) {
+                    val directory =
+                        DocumentFile.fromTreeUri(requireContext(), prefsHelper.workDirectory!!)!!
+
+                    val songs = directory.listFiles().map {
+                        Song(
+                            title = it.name!!,
+                            uriInStorage = it.uri
+                        )
+                    }
+
+                    withContext(Dispatchers.IO){
+                        adapter.data = songs
+                    }
+                }
+            }
+        }
+    }
+
+    private fun onPlayPauseClicked(song: Song) {
+        lifecycleScope.launch {
+            (player.stateLiveData.value as? PlayerState.Idle)?.let {
+                it.setSong(requireContext(), song.uriInStorage).play()
+            }
+        }
     }
 }
