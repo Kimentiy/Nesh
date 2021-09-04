@@ -23,10 +23,10 @@ fun SongViewHolder.bind(song: Song, onPlayPauseClicked: (Song) -> Unit) {
     titleTextView.text = song.title
 }
 
-fun createSearchSongItemGroup(onDownloadClicked: () -> Unit): ItemGroup<Song, SearchSongViewHolder> {
+fun createSearchSongItemGroup(onDownloadClicked: (SearchSong) -> Unit): ItemGroup<SearchSong, SearchSongViewHolder> {
     return ItemGroup(
         layoutResId = R.layout.item_search_song,
-        isMyData = { it is Song },
+        isMyData = { it is SearchSong },
         createViewHolder = ::SearchSongViewHolder,
         bindViewHolder = { holder, data ->
             holder.bind(data, onDownloadClicked)
@@ -39,8 +39,8 @@ class SearchSongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
     val titleTextView: TextView = view.findViewById(R.id.text_title)
 }
 
-fun SearchSongViewHolder.bind(song: Song, onClick: () -> Unit) {
+fun SearchSongViewHolder.bind(song: SearchSong, onClick: (SearchSong) -> Unit) {
     titleTextView.text = song.title
 
-    downloadButton.setOnClickListener { onClick() }
+    downloadButton.setOnClickListener { onClick(song) }
 }

@@ -7,16 +7,16 @@ import kotlinx.coroutines.withContext
 
 class SongsRepository(private val app: NeshApp) {
 
-    private val fileName = "RapGod"
-
-    suspend fun getRapGodSong(dirUri: Uri) = withContext(Dispatchers.IO) {
+    suspend fun getSong(song: SearchSong, dirUri: Uri) = withContext(Dispatchers.IO) {
         val service = app.retrofit.create(SongsService::class.java)
 
-        val call = service.getRapGodSong()
+        val call = service.getSong(song.downloadUrl)
 
         val response = call.execute()
 
         android.util.Log.d("MyTag", response.code().toString())
+
+        val fileName = "${song.title}.mp3"
 
         if (response.isSuccessful) {
             val directory = DocumentFile.fromTreeUri(app, dirUri)!!

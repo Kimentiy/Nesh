@@ -112,7 +112,7 @@ class MainFragment : Fragment() {
                         )
                     }
 
-                    withContext(Dispatchers.IO){
+                    withContext(Dispatchers.Main){
                         adapter.data = songs
                     }
                 }
