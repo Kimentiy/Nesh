@@ -7,16 +7,14 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageButton
 import android.widget.ProgressBar
+import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree
-import androidx.documentfile.provider.DocumentFile
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.floatingactionbutton.FloatingActionButton
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 class MainFragment : Fragment() {
 
@@ -100,30 +98,22 @@ class MainFragment : Fragment() {
         super.onResume()
 
         if (prefsHelper.workDirectory != null) {
+            val fileStorage = FileStorageImpl(requireContext().applicationContext)
+
             lifecycleScope.launch {
-                withContext(Dispatchers.IO) {
-                    val directory =
-                        DocumentFile.fromTreeUri(requireContext(), prefsHelper.workDirectory!!)!!
-
-                    val songs = directory.listFiles().map {
-                        Song(
-                            title = it.name!!,
-                            uriInStorage = it.uri
-                        )
-                    }
-
-                    withContext(Dispatchers.Main){
-                        adapter.data = songs
-                    }
+                when (val result = fileStorage.getSavedSongs()) {
+                    is Result.Error -> Toast.makeText(context, result.e.message, Toast.LENGTH_LONG)
+                        .show()
+                    is Result.Successful -> adapter.data = result.value
                 }
             }
         }
     }
 
-    private fun onPlayPauseClicked(song: Song) {
+    private fun onPlayPauseClicked(song: SavedSong) {
         lifecycleScope.launch {
             (player.stateLiveData.value as? PlayerState.Idle)?.let {
-                it.setSong(requireContext(), song.uriInStorage).play()
+                it.setSong(requireContext(), song.storageUri).play()
             }
         }
     }

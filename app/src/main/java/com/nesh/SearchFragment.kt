@@ -91,18 +91,20 @@ class SearchFragment : DialogFragment() {
         requireContext().blockUiAndDo(lifecycleScope) {
             val repository = SongsRepository(activity?.application as NeshApp)
 
-            prefsHelper.workDirectory?.let { dirUri ->
-                val uri = repository.getSong(song, dirUri)
+            val fileStorage = FileStorageImpl(requireContext().applicationContext)
 
-                val textToShow = if (uri != null) {
-                    "Song was downloaded"
-                } else {
-                    "Got error"
-                }
+            val savedSong = repository.getSong(song)?.let {
+                fileStorage.saveSong(song.title, it)
+            }
 
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(context, textToShow, Toast.LENGTH_SHORT).show()
-                }
+            val textToShow = if (savedSong is Result.Successful) {
+                "Song was downloaded"
+            } else {
+                "Got error"
+            }
+
+            withContext(Dispatchers.Main) {
+                Toast.makeText(context, textToShow, Toast.LENGTH_SHORT).show()
             }
         }
     }

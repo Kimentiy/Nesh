@@ -5,9 +5,9 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-fun createSongItemGroup(onPlayPauseClicked: (Song) -> Unit): ItemGroup<Song, SongViewHolder> {
+fun createSongItemGroup(onPlayPauseClicked: (SavedSong) -> Unit): ItemGroup<SavedSong, SongViewHolder> {
     return ItemGroup(layoutResId = R.layout.item_song,
-        isMyData = { it is Song },
+        isMyData = { it is SavedSong },
         createViewHolder = ::SongViewHolder,
         bindViewHolder = { holder, data -> holder.bind(data, onPlayPauseClicked) }
     )
@@ -18,7 +18,7 @@ class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
     val titleTextView: TextView = view.findViewById(R.id.text_title)
 }
 
-fun SongViewHolder.bind(song: Song, onPlayPauseClicked: (Song) -> Unit) {
+fun SongViewHolder.bind(song: SavedSong, onPlayPauseClicked: (SavedSong) -> Unit) {
     playPauseButton.setOnClickListener { onPlayPauseClicked(song) }
     titleTextView.text = song.title
 }
