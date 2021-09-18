@@ -93,14 +93,16 @@ class SearchFragment : DialogFragment() {
 
             val fileStorage = FileStorageImpl(requireContext().applicationContext)
 
-            val savedSong = repository.getSong(song)?.let {
-                fileStorage.saveSong(song.title, it)
+            val savedSong = repository.getSong(song).let {
+                when (it) {
+                    is Result.Error -> it
+                    is Result.Successful -> fileStorage.saveSong(song.title, it.value)
+                }
             }
 
-            val textToShow = if (savedSong is Result.Successful) {
-                "Song was downloaded"
-            } else {
-                "Got error"
+            val textToShow = when (savedSong) {
+                is Result.Error -> savedSong.e.message
+                is Result.Successful -> "Song was downloaded"
             }
 
             withContext(Dispatchers.Main) {
