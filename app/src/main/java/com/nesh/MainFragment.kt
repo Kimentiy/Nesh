@@ -39,6 +39,8 @@ class MainFragment : Fragment() {
         prefsHelper.workDirectory = it
     }
 
+    private lateinit var songQueue: SimpleSongQueue
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -51,6 +53,7 @@ class MainFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         prefsHelper = PrefsHelper(requireContext())
+        songQueue = SimpleSongQueue(requireContext(), player, lifecycleScope)
 
         val recycler = view.findViewById<RecyclerView>(R.id.rv_downloaded_songs)
 
@@ -93,6 +96,10 @@ class MainFragment : Fragment() {
                 .add(SearchFragment(), "SearchFragmentTag")
                 .commit()
         }
+
+        savedSongs.observe(viewLifecycleOwner, { songs ->
+            songQueue.setSongs(songs)
+        })
 
         MediatorLiveData<Pair<List<SavedSong>, PlayerState>>().apply {
             addSource(savedSongs) {

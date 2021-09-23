@@ -21,10 +21,22 @@ class Player(private val scope: CoroutineScope) {
     private val _durationLiveData = MutableLiveData(0)
     val durationLiveData: LiveData<Int> = _durationLiveData
 
+    var completionListener: ((PlayerState.Paused) -> Unit)? = null
+
     init {
         // TODO is it correct place to update duration?
         mediaPlayer.setOnPreparedListener {
             _durationLiveData.postValue(mediaPlayer.duration)
+        }
+        mediaPlayer.setOnCompletionListener {
+            val currentState = _stateLiveData.requireValue as? PlayerState.Playing
+                ?: return@setOnCompletionListener
+
+            val newState = PlayerState.Paused(this, currentState.playingSong)
+
+            _stateLiveData.postValue(newState)
+
+            completionListener?.invoke(newState)
         }
     }
 
