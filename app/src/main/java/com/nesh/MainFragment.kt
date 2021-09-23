@@ -13,6 +13,8 @@ import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts.OpenDocumentTree
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -26,8 +28,13 @@ class MainFragment : Fragment() {
 
     private lateinit var prefsHelper: PrefsHelper
 
+    private val savedSongs = MutableLiveData<List<SavedSong>>(emptyList())
+
     private val getWorkDirectory = registerForActivityResult(OpenDocumentTree()) {
-        requireContext().contentResolver.takePersistableUriPermission(it, FLAG_GRANT_READ_URI_PERMISSION and FLAG_GRANT_WRITE_URI_PERMISSION)
+        requireContext().contentResolver.takePersistableUriPermission(
+            it,
+            FLAG_GRANT_READ_URI_PERMISSION and FLAG_GRANT_WRITE_URI_PERMISSION
+        )
 
         prefsHelper.workDirectory = it
     }
@@ -87,10 +94,26 @@ class MainFragment : Fragment() {
                 .commit()
         }
 
+        MediatorLiveData<Pair<List<SavedSong>, PlayerState>>().apply {
+            addSource(savedSongs) {
+                postValue(it to player.stateLiveData.requireValue)
+            }
+
+            addSource(player.stateLiveData) {
+                postValue(savedSongs.requireValue to it)
+            }
+        }.observe(viewLifecycleOwner, { (songs, playerState) ->
+            updateItems(songs, playerState)
+        })
+
         if (prefsHelper.workDirectory == null) {
             launchWorkDirectorySelection()
         } else if (!checkPermissions(prefsHelper.workDirectory!!)) {
-            Toast.makeText(requireContext(), "Have work directory uri, but not permissions", Toast.LENGTH_LONG).show()
+            Toast.makeText(
+                requireContext(),
+                "Have work directory uri, but not permissions",
+                Toast.LENGTH_LONG
+            ).show()
 
             launchWorkDirectorySelection()
         }
@@ -106,9 +129,20 @@ class MainFragment : Fragment() {
                 when (val result = fileStorage.getSavedSongs()) {
                     is Result.Error -> Toast.makeText(context, result.e.message, Toast.LENGTH_LONG)
                         .show()
-                    is Result.Successful -> adapter.data = result.value
+                    is Result.Successful -> {
+                        savedSongs.postValue(result.value)
+                    }
                 }
             }
+        }
+    }
+
+    private fun updateItems(songs: List<SavedSong>, playerState: PlayerState) {
+        adapter.data = songs.map {
+            SavedSongItem(
+                it,
+                isPlaying = (playerState as? PlayerState.Playing)?.playingSong == it.storageUri
+            )
         }
     }
 
@@ -130,10 +164,28 @@ class MainFragment : Fragment() {
         ) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun onPlayPauseClicked(song: SavedSong) {
+    private fun onPlayPauseClicked(item: SavedSongItem) {
+        val currentPlayerState = player.stateLiveData.requireValue
+        val songUri = item.song.storageUri
+
         lifecycleScope.launch {
-            (player.stateLiveData.value as? PlayerState.Idle)?.let {
-                it.setSong(requireContext(), song.storageUri).play()
+            when (currentPlayerState) {
+                is PlayerState.Idle -> currentPlayerState.setSong(requireContext(), songUri).play()
+                is PlayerState.Paused -> {
+                    if (currentPlayerState.pausedSong == songUri) {
+                        currentPlayerState.play()
+                    } else {
+                        currentPlayerState.stop().setSong(requireContext(), songUri).play()
+                    }
+                }
+                is PlayerState.Playing -> {
+                    if (currentPlayerState.playingSong == songUri) {
+                        currentPlayerState.pause()
+                    } else {
+                        currentPlayerState.stop().setSong(requireContext(), songUri).play()
+                    }
+                }
+                is PlayerState.Released -> Unit
             }
         }
     }

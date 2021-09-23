@@ -22,23 +22,26 @@ sealed class PlayerState(protected val player: Player) {
         suspend fun setSong(song: File) = withContext(Dispatchers.IO) {
             player.setNewSong(song)
 
-            Paused(player).apply(player::setNewState)
+            Paused(player, Uri.EMPTY).apply(player::setNewState)
         }
 
         suspend fun setSong(context: Context, uri: Uri) = withContext(Dispatchers.IO) {
             player.setNewSong(context, uri)
 
-            Paused(player).apply(player::setNewState)
+            Paused(player, uri).apply(player::setNewState)
         }
 
         override fun stopImpl(): Idle = this
     }
 
-    class Paused(player: Player) : PlayerState(player) {
+    class Paused(
+        player: Player,
+        val pausedSong: Uri
+    ) : PlayerState(player) {
         fun play(): Playing {
             player.play()
 
-            return Playing(player).apply(player::setNewState)
+            return Playing(player, pausedSong).apply(player::setNewState)
         }
 
         override fun stopImpl(): Idle {
@@ -48,11 +51,14 @@ sealed class PlayerState(protected val player: Player) {
         }
     }
 
-    class Playing(player: Player) : PlayerState(player) {
+    class Playing(
+        player: Player,
+        val playingSong: Uri
+    ) : PlayerState(player) {
         fun pause(): Paused {
             player.pause()
 
-            return Paused(player).apply(player::setNewState)
+            return Paused(player, playingSong).apply(player::setNewState)
         }
 
         override fun stopImpl(): Idle {

@@ -5,9 +5,14 @@ import android.widget.ImageButton
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 
-fun createSongItemGroup(onPlayPauseClicked: (SavedSong) -> Unit): ItemGroup<SavedSong, SongViewHolder> {
+data class SavedSongItem(
+    val song: SavedSong,
+    val isPlaying: Boolean
+)
+
+fun createSongItemGroup(onPlayPauseClicked: (SavedSongItem) -> Unit): ItemGroup<SavedSongItem, SongViewHolder> {
     return ItemGroup(layoutResId = R.layout.item_song,
-        isMyData = { it is SavedSong },
+        isMyData = { it is SavedSongItem },
         createViewHolder = ::SongViewHolder,
         bindViewHolder = { holder, data -> holder.bind(data, onPlayPauseClicked) }
     )
@@ -18,9 +23,10 @@ class SongViewHolder(view: View) : RecyclerView.ViewHolder(view) {
     val titleTextView: TextView = view.findViewById(R.id.text_title)
 }
 
-fun SongViewHolder.bind(song: SavedSong, onPlayPauseClicked: (SavedSong) -> Unit) {
-    playPauseButton.setOnClickListener { onPlayPauseClicked(song) }
-    titleTextView.text = song.title
+fun SongViewHolder.bind(item: SavedSongItem, onPlayPauseClicked: (SavedSongItem) -> Unit) {
+    playPauseButton.setImageResource(if (item.isPlaying) R.drawable.ic_pause_white else R.drawable.ic_play_white)
+    playPauseButton.setOnClickListener { onPlayPauseClicked(item) }
+    titleTextView.text = item.song.title
 }
 
 fun createSearchSongItemGroup(onDownloadClicked: (SearchSong) -> Unit): ItemGroup<SearchSong, SearchSongViewHolder> {
