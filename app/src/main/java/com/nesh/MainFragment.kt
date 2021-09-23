@@ -1,5 +1,8 @@
 package com.nesh
 
+import android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION
+import android.content.Intent.FLAG_GRANT_WRITE_URI_PERMISSION
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
 import android.view.LayoutInflater
@@ -24,6 +27,8 @@ class MainFragment : Fragment() {
     private lateinit var prefsHelper: PrefsHelper
 
     private val getWorkDirectory = registerForActivityResult(OpenDocumentTree()) {
+        requireContext().contentResolver.takePersistableUriPermission(it, FLAG_GRANT_READ_URI_PERMISSION and FLAG_GRANT_WRITE_URI_PERMISSION)
+
         prefsHelper.workDirectory = it
     }
 
@@ -83,14 +88,11 @@ class MainFragment : Fragment() {
         }
 
         if (prefsHelper.workDirectory == null) {
-            viewLifecycleOwner.lifecycleScope.launch {
-                val result = showAlertDialog(requireContext(), "Please select a working directory")
+            launchWorkDirectorySelection()
+        } else if (!checkPermissions(prefsHelper.workDirectory!!)) {
+            Toast.makeText(requireContext(), "Have work directory uri, but not permissions", Toast.LENGTH_LONG).show()
 
-                when (result) {
-                    DialogResult.Accepted -> getWorkDirectory.launch(Uri.EMPTY)
-                    DialogResult.Dismissed -> Unit
-                }
-            }
+            launchWorkDirectorySelection()
         }
     }
 
@@ -108,6 +110,24 @@ class MainFragment : Fragment() {
                 }
             }
         }
+    }
+
+    private fun launchWorkDirectorySelection() {
+        viewLifecycleOwner.lifecycleScope.launch {
+            val result = showAlertDialog(requireContext(), "Please select a working directory")
+
+            when (result) {
+                DialogResult.Accepted -> getWorkDirectory.launch(Uri.EMPTY)
+                DialogResult.Dismissed -> Unit
+            }
+        }
+    }
+
+    private fun checkPermissions(uri: Uri): Boolean {
+        return requireContext().checkCallingOrSelfUriPermission(
+            uri,
+            FLAG_GRANT_READ_URI_PERMISSION and FLAG_GRANT_WRITE_URI_PERMISSION
+        ) == PackageManager.PERMISSION_GRANTED
     }
 
     private fun onPlayPauseClicked(song: SavedSong) {
